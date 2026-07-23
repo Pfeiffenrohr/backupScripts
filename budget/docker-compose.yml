@@ -1,0 +1,108 @@
+services:
+    myapp-web:
+      image: pfeiffenrohr/cbudgetnew
+      container_name: budget_web
+      ports:
+        - "8081:8080"
+      restart: always
+      links:
+        - myapp-db
+
+    myapp-db:
+      container_name: "myapp-db"
+      image: "postgres:9"
+      volumes:
+        - ./data:/var/lib/postgresql/data
+      ports:
+        #      - "5432:5432"
+        - "54322"
+      restart: always
+      #    expose:
+      #     - "5432"
+      environment:
+        POSTGRES_USER: budget
+        POSTGRES_PASSWORD: budget
+        POSTGRES_DB: budget
+    exchange-db:
+      container_name: "exchange-db"
+      image: "postgres:9"
+      volumes:
+        - ./data_exchange:/var/lib/postgresql/data
+      ports:
+        - "5433"
+      restart: always
+      environment:
+        POSTGRES_USER: exchange
+        POSTGRES_PASSWORD: exchange
+        POSTGRES_DB: exchange
+    cbudgetbatch:
+      image: pfeiffenrohr/cbudgetbatch
+      ports:
+        - "7777:7777"
+      restart: always
+      links:
+        - myapp-db
+      environment:
+        connectstring: jdbc:postgresql://myapp-db:5432/
+        forecastComputeIntervall: 700600
+        cacheComputeIntervall: 30
+        computeWeights: nein
+    cbudgetcache:
+      image: pfeiffenrohr/cbudgetcache
+      restart: always
+      environment:
+        connectstring: jdbc:postgresql://myapp-db:5432/
+        forecastComputeIntervall: 345600
+        cacheComputeIntervall: 30
+        ComputeOnlyNight: day
+      links:
+        - myapp-db
+      deploy:
+        replicas: 4
+    cbudgetserver:
+      image: pfeiffenrohr/cbudgetserver
+      ports:
+        - "8092:8092"
+      restart: always
+      environment:
+        databaseurl: jdbc:postgresql://myapp-db:5432/budget
+      links:
+        - myapp-db
+    cbudgetrendite:
+      image: pfeiffenrohr/cbudgetrendite
+      restart: always
+      environment:
+        databaseurl: jdbc:postgresql://myapp-db:5432/
+        budgetserverhost: h2915074.stratoserver.net
+        budgetserverport: 8092
+      links:
+        - myapp-db
+    cbudgetexchange:
+      image: pfeiffenrohr/cbudgetexchange
+      extra_hosts:
+        - "nextcloud.life-tracker.de:82.165.129.138"
+      restart: always
+      environment:
+        databaseurl: jdbc:postgresql://exchange-db:5432/
+        budgetserverhost: h2915074.stratoserver.net
+        budgetserverport: 8092
+        #sendtotalk: nein
+      links:
+        - exchange-db
+        - myapp-db
+    budgetreadslip:
+      image: pfeiffenrohr/cbudgetreadslip
+      restart: always
+      ports:
+        - "8090:8090"
+      environment:
+        budgetserverhost: h2915074.stratoserver.net
+        budgetserverport: 8092
+    mydatabasedump:
+      image: pfeiffenrohr/mydatabasedump
+      restart: always
+      volumes:
+        - ./dump:/dump
+      links:
+        - myapp-db
+        - exchange-db
