@@ -195,7 +195,7 @@ backup_databases() {
     /usr/bin/scp -i /home/richard/.ssh/id_rsa "$BUDGET_HOST:/home/richard/docker/CbudgetNew/dump/*" /home/richard/backup
     if [ $? -eq 0 ]; then
         log_info "Lösche Remote Budget-Dumps"
-        /usr/bin/ssh -i /home/richard/.ssh/id_rsa "$BUDGET_HOST" "rm -f /home/richard/docker/CbudgetNew/dump/budget*"
+        /usr/bin/ssh -i /home/richard/.ssh/id_rsa "$BUDGET_HOST" "rm -f /home/richard/docker/CbudgetNew/dump/*"
     else
         log_error "Konnte das Budget Datenbankbackup nicht erstellen"
         send_notification "@richard Konnte das Budget Datenbankbackup nicht erstellen"
